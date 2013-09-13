@@ -15,11 +15,46 @@ from ftfy.compatibility import unichr
 # They are listed in order of frequency, so that more frequent
 # encodings will be tried first.
 CHARMAP_ENCODINGS = [
-    'windows-1252',
     'latin-1',
+    'iso-8859-2',
+    'iso-8859-3',
+    'iso-8859-4',
+    'iso-8859-5',
+    'iso-8859-6',
+    'iso-8859-7',
+    # iso-8859-8 is included in windows-1255
+    'iso-8859-9',
+    'iso-8859-10',
+    'iso-8859-11',
+    # iso-8859-12 doesn't exist
+    'iso-8859-13',
+    'iso-8859-14',
+    # iso-8859-15 is ambiguous with latin-1
+    'iso-8859-16',
+    'windows-1250',
+    'windows-1251',
+    'windows-1252',
+    'windows-1253',
+    'windows-1254',
+    'windows-1255',
+    'windows-1256',
+    'windows-1257',
+    'windows-1258',
     'macroman',
     'cp437',
-    'windows-1251',
+    
+    ## These are probably too rare to support
+    # 'maccyrillic',
+    # 'macarabic',
+    # 'maccentraleurroman',
+    # 'macukrainian',
+    # 'koi8-r',
+    # 'koi8-u',
+    # 'mazovia',
+    # 'cp737',
+    # 'cp850',
+    # 'cp857',
+    # 'cp895',
 ]
 
 
@@ -45,7 +80,9 @@ def _build_charmaps():
     are between U+0000 and U+007F.
     """
     charmaps = {}
-    encoding_regexes = {'ascii': re.compile('^[\x00-\x7f]*$')}
+    encoding_regexes = {
+        'ascii': re.compile('^[\x00-\x7f]*$'),
+    }
     for encoding in CHARMAP_ENCODINGS:
         charmap = {}
         for codepoint in range(0, 0x80):
