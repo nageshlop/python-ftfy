@@ -80,13 +80,16 @@ def _build_charmaps():
     are between U+0000 and U+007F.
     """
     charmaps = {}
+    inverse_charmaps = {}
     encoding_regexes = {
         'ascii': re.compile('^[\x00-\x7f]*$'),
     }
     for encoding in CHARMAP_ENCODINGS:
         charmap = {}
+        inverse_charmap = {}
         for codepoint in range(0, 0x80):
             charmap[codepoint] = unichr(codepoint)
+            inverse_charmap[codepoint] = unichr(codepoint)
         for codepoint in range(0x80, 0x100):
             char = unichr(codepoint)
             encoded_char = char.encode('latin-1')
@@ -95,14 +98,16 @@ def _build_charmaps():
             except ValueError:
                 decoded_char = char
             charmap[ord(decoded_char)] = char
+            inverse_charmap[ord(char)] = decoded_char
 
         charlist = [unichr(codept) for codept in sorted(charmap.keys())
                     if codept >= 0x80]
         regex = '^[\x00-\x7f{}]*$'.format(''.join(charlist))
         charmaps[encoding] = charmap
+        inverse_charmaps[encoding] = inverse_charmap
         encoding_regexes[encoding] = re.compile(regex)
-    return charmaps, encoding_regexes
-CHARMAPS, ENCODING_REGEXES = _build_charmaps()
+    return charmaps, inverse_charmaps, encoding_regexes
+CHARMAPS, INVERSE_CHARMAPS, ENCODING_REGEXES = _build_charmaps()
 
 
 def possible_encoding(text, encoding):
