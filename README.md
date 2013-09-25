@@ -5,7 +5,22 @@
 
 Full documentation: **http://ftfy.readthedocs.org**
 
-This is a module for making text less broken and more consistent. It works in
+## Testimonials
+
+- “My life is livable again!”
+  — [@planarrowspace](http://twitter.com/planarrowspace)
+- “A handy piece of magic”
+  — [@simonw](http://twitter.com/simonw)
+- “Hat mir die Tage geholfen. Im Übrigen bin ich der Meinung, dass wir keine komplexen Maschinen mit Computern bauen sollten solange wir nicht einmal Umlaute sicher verarbeiten können. :D”
+  — [Bruno Ranieri](http://yrrsinn.de/2012/09/17/gelesen-kw37/)
+- “I have no idea when I’m gonna need this, but I’m definitely bookmarking it.”
+  — [/u/ocrow](http://reddit.com/u/ocrow)
+- “9.41/10”
+  — [pylint](https://bitbucket.org/logilab/pylint/)
+
+## What it does
+
+ftfy makes Unicode text less broken and more consistent. It works in
 Python 2.6, Python 3.2, or later.
 
 The most interesting kind of brokenness that this resolves is when someone
@@ -18,9 +33,9 @@ This often shows up as characters that turn into nonsense sequences:
   instead enclosed in `â€œ` and `â€` (and that last character
   probably won't even display as anything meaningful).
 
-This happens very often to real text. Fortunately, the nonsense sequences
-usually contain all the information you need to reconstruct what character was
-supposed to be there.
+This is called "mojibake", and it happens very often to real text. Fortunately,
+the nonsense sequences usually contain all the information you need to
+reconstruct what character was supposed to be there.
 
 Any given text string might have other irritating properties, possibly even
 interacting with the erroneous decoding:
@@ -76,13 +91,17 @@ the output ends up in a standard form that will be unchanged by `fix_text`.
 
 All the fixes are on by default, but you can pass options to turn them off.
 
-- If `remove_terminal_escapes` is True, remove sequences of bytes that are
-  instructions for Unix terminals, such as the codes that make text appear
-  in different colors.
+- If `remove_unsafe_private_use` is True, remove a range of unassigned
+  characters that can crash Python via
+  [bug 18183](http://bugs.python.org/issue18183). This fix will turn itself
+  off when you're using Python 3.4 or better, which you probably aren't.
 - If `fix_entities` is True, consider replacing HTML entities with their
   equivalent characters. However, this never applies to text with a pair
   of angle brackets in it already; you're probably not supposed to decode
   entities there, and you'd make things ambiguous if you did.
+- If `remove_terminal_escapes` is True, remove sequences of bytes that are
+  instructions for Unix terminals, such as the codes that make text appear
+  in different colors.
 - If `fix_encoding` is True, look for common mistakes that come from
   encoding or decoding Unicode text incorrectly, and fix them if they are
   reasonably fixable.

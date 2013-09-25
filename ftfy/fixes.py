@@ -10,7 +10,8 @@ from ftfy.chardata import (possible_encoding, CHARMAPS, CHARMAP_ENCODINGS,
 from ftfy.badness import text_cost
 import re
 import sys
-from ftfy.compatibility import htmlentitydefs, unichr, bytes_to_ints
+from ftfy.compatibility import (htmlentitydefs, unichr, bytes_to_ints,
+                                UNSAFE_PRIVATE_USE_RE)
 
 
 BYTES_ERROR_TEXT = """Hey wait, this isn't Unicode.
@@ -102,15 +103,19 @@ def fix_text_encoding(text):
     """
     best_version = text
     best_cost = text_cost(text)
+    plan_so_far = []
     while True:
         prevtext = text
         text, plan = fix_text_and_explain(text)
+        plan_so_far.extend(plan)
         cost = text_cost(text)
 
-        # Add a small penalty if we used a particularly obsolete encoding.
-        if ('sloppy_encode', 'macroman') in plan or\
-           ('sloppy_encode', 'cp437') in plan:
-            cost += 1
+        # Add a penalty if we used a particularly obsolete encoding. The result
+        # is that we won't use these encodings unless they can successfully
+        # replace multiple characters.
+        if ('sloppy_encode', 'macroman') in plan_so_far or\
+           ('sloppy_encode', 'cp437') in plan_so_far:
+            cost += 2
 
         if cost < best_cost:
             best_cost = cost
@@ -262,7 +267,7 @@ def remove_terminal_escapes(text):
     r"""
     Strip out "ANSI" terminal escape sequences, such as those that produce
     colored text on Unix.
-        
+
         >>> print(remove_terminal_escapes(
         ...     "\033[36;44mI'm blue, da ba dee da ba doo...\033[0m"
         ... ))
@@ -303,8 +308,8 @@ def remove_control_chars(text):
     - U+000B
     - U+000E to U+001F
     - U+007F
-    
-    it leaves alone these characters that are commonly used for formatting:
+
+    It leaves alone these characters that are commonly used for formatting:
 
     - TAB (U+0009)
     - LF (U+000A)
@@ -312,7 +317,6 @@ def remove_control_chars(text):
     - CR (U+000D)
     """
     return text.translate(CONTROL_CHARS)
-
 
 
 def remove_bom(text):
@@ -323,3 +327,31 @@ def remove_bom(text):
     Where do you want to go today?
     """
     return text.lstrip(unichr(0xfeff))
+
+
+def remove_unsafe_private_use(text):
+    r"""
+    Python 3.3's Unicode support isn't perfect, and in fact there are certain
+    string operations that will crash it with a SystemError:
+    http://bugs.python.org/issue18183
+
+    You can trigger the bug by running `` '\U00010000\U00100000'.lower() ``.
+
+    The best solution on Python 3.3 is to remove all characters from
+    Supplementary Private Use Area B, using a regex that is known not to crash
+    given those characters.
+    
+    These are the characters from U+100000 to U+10FFFF. It's sad to lose an
+    entire plane of Unicode, but on the other hand, these characters are not
+    assigned and never will be. If you get one of these characters and don't
+    know what its purpose is, its purpose is probably to crash your code.
+    
+    If you were using these for actual private use, this might be inconvenient.
+    You can turn off this fixer, of course, but I kind of encourage using
+    Supplementary Private Use Area A instead.
+
+        >>> print(remove_unsafe_private_use('\U0001F4A9\U00100000'))
+        💩
+    """
+    return UNSAFE_PRIVATE_USE_RE.sub('', text)
+
