@@ -10,7 +10,7 @@ def search_function(encoding):
 
     norm_encoding = normalize_encoding(encoding).replace('_', '')
     codec = None
-    if norm_encoding in ('utf8variants', 'utf8variant', 'utf8var'):
+    if norm_encoding in ('utf8variants', 'utf8variant', 'utf8var', 'cesu8'):
         from ftfy.bad_codecs.utf8_variants import CODEC_INFO
         codec = CODEC_INFO
 
