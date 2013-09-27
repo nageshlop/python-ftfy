@@ -46,6 +46,7 @@ NAME = 'utf-8-variants'
 CESU8_RE = re.compile(b'\xed[\xa0-\xaf][\x80-\xbf]\xed[\xb0-\xbf][\x80-\xbf]')
 
 
+# TODO: document and write tests
 class IncrementalDecoder(UTF8IncrementalDecoder):
     def _buffer_decode(self, input, errors, final):
         decoded_segments = []
@@ -90,12 +91,15 @@ class IncrementalDecoder(UTF8IncrementalDecoder):
     @staticmethod
     def _buffer_decode_null(sup, input, errors, final):
         nextchar = input[1:2]
-        if nextchar == '':
-            return '', 0
+        if nextchar == b'':
+            if final:
+                return sup(input, errors, True)
+            else:
+                return '', 0
         elif nextchar == b'\x80':
             return '\u0000', 2
         else:
-            return sup('\xc0', errors, True)
+            return sup(b'\xc0', errors, True)
 
     @staticmethod
     def _buffer_decode_surrogates(sup, input, errors, final):
@@ -138,11 +142,11 @@ IncrementalEncoder = UTF8IncrementalEncoder
 
 # Everything below here is basically boilerplate.
 def encode(input, errors='strict'):
-    return IncrementalEncoder(errors).encode(input), len(input)
+    return IncrementalEncoder(errors).encode(input, final=True), len(input)
 
 
 def decode(input, errors='strict'):
-    return IncrementalDecoder(errors).decode(input), len(input)
+    return IncrementalDecoder(errors).decode(input, final=True), len(input)
 
 
 class StreamWriter(codecs.StreamWriter):

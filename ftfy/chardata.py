@@ -12,10 +12,19 @@ from ftfy.compatibility import unichr
 
 
 # These are encodings that map each byte to a particular character.
-# They are listed in order of frequency, so that more frequent
-# encodings will be tried first.
 CHARMAP_ENCODINGS = [
     'latin-1',
+    'windows-1252',
+    'macroman',
+    'cp437',
+    'windows-1251',
+    'windows-1250',
+    'windows-1253',
+    'windows-1254',
+    'windows-1255',
+    'windows-1256',
+    'windows-1257',
+    'windows-1258',
     'iso-8859-2',
     'iso-8859-3',
     'iso-8859-4',
@@ -31,30 +40,29 @@ CHARMAP_ENCODINGS = [
     'iso-8859-14',
     # iso-8859-15 is ambiguous with latin-1
     'iso-8859-16',
-    'windows-1250',
-    'windows-1251',
-    'windows-1252',
-    'windows-1253',
-    'windows-1254',
-    'windows-1255',
-    'windows-1256',
-    'windows-1257',
-    'windows-1258',
-    'macroman',
-    'cp437',
+    'koi8-r',
+    'koi8-u',
     
     ## These are probably too rare to support
     # 'maccyrillic',
     # 'macarabic',
     # 'maccentraleurroman',
     # 'macukrainian',
-    # 'koi8-r',
-    # 'koi8-u',
     # 'mazovia',
     # 'cp737',
     # 'cp850',
     # 'cp857',
     # 'cp895',
+]
+
+# These are the five encodings we will actually try to fix in ftfy, in the
+# order that they should be tried.
+FIXABLE_CHARMAP_ENCODINGS = [
+    'latin-1',
+    'windows-1252',
+    'macroman',
+    'cp437',
+    'windows-1251',
 ]
 
 

@@ -5,13 +5,14 @@ can perform.
 """
 
 from __future__ import unicode_literals
-from ftfy.chardata import (possible_encoding, CHARMAPS, CHARMAP_ENCODINGS,
-                           CONTROL_CHARS)
+from ftfy.chardata import (possible_encoding, CHARMAPS,
+                           FIXABLE_CHARMAP_ENCODINGS, CONTROL_CHARS)
 from ftfy.badness import text_cost
-import re
-import sys
 from ftfy.compatibility import (htmlentitydefs, unichr, bytes_to_ints,
                                 UNSAFE_PRIVATE_USE_RE)
+import ftfy.bad_codecs
+import re
+import sys
 
 
 BYTES_ERROR_TEXT = """Hey wait, this isn't Unicode.
@@ -117,6 +118,7 @@ def fix_text_encoding(text):
            ('sloppy_encode', 'cp437') in plan_so_far:
             cost += 2
 
+        print((text, plan, cost))
         if cost < best_cost:
             best_cost = cost
             best_version = text
@@ -149,8 +151,9 @@ def fix_text_and_explain(text):
     # Suppose the text was supposed to be UTF-8, but it was decoded using
     # a single-byte encoding instead. When these cases can be fixed, they
     # are usually the correct thing to do, so try them next.
-    for encoding in CHARMAP_ENCODINGS:
+    for encoding in FIXABLE_CHARMAP_ENCODINGS:
         if possible_encoding(text, encoding):
+            print('possible encoding: %s' % encoding)
             # This is an ugly-looking way to get the bytes that represent
             # the text in this encoding. The reason we can't necessarily
             # use .encode(encoding) is that the decoder is very likely
@@ -167,19 +170,16 @@ def fix_text_and_explain(text):
             # points up to 0xff. This can then be converted into the intended
             # bytes by encoding it as Latin-1.
             sorta_encoded_text = text.translate(CHARMAPS[encoding])
+            encoded_bytes = sorta_encoded_text.encode('latin-1')
 
-            # When we get the bytes, run them through fix_java_encoding,
-            # because we can only reliably do that at the byte level. (See
-            # its documentation for details.)
-            encoded_bytes = fix_java_encoding(
-                sorta_encoded_text.encode('latin-1')
-            )
-
-            # Now, find out if it's UTF-8. Otherwise, remember the encoding
-            # for later.
+            # Now, find out if it's UTF-8 (or close enough). Otherwise,
+            # remember the encoding for later.
             try:
-                fixed = encoded_bytes.decode('utf-8')
-                steps = [('sloppy_encode', encoding), ('decode', 'utf-8')]
+                decoding = 'utf-8'
+                if b'\xed' in encoded_bytes or b'\xc0' in encoded_bytes:
+                    decoding = 'utf-8-variants'
+                fixed = encoded_bytes.decode(decoding)
+                steps = [('sloppy_encode', encoding), ('decode', decoding)]
                 return fixed, steps
             except UnicodeDecodeError:
                 possible_1byte_encodings.append(encoding)
