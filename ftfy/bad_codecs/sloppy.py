@@ -1,5 +1,6 @@
 from __future__ import unicode_literals
 import codecs
+from encodings import normalize_encoding
 
 REPLACEMENT_CHAR = '\ufffd'
 
@@ -45,6 +46,12 @@ def make_sloppy_codec(encoding):
     )
 
 CODECS = {}
-for codepage in range(1250, 1259):
-    codec_info = make_sloppy_codec('windows-%s' % codepage)
-    CODECS['sloppy%s' % codepage] = codec_info
+INCOMPLETE_ENCODINGS = (
+    ['windows-%s' % num for num in range(1250, 1259)] +
+    ['iso-8859-%s' % num for num in (3, 6, 7, 8, 11)]
+)
+
+for _encoding in INCOMPLETE_ENCODINGS:
+    _new_name = normalize_encoding('sloppy-' + _encoding)
+    CODECS[_new_name] = make_sloppy_codec(_encoding)
+

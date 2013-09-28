@@ -5,7 +5,7 @@ can perform.
 """
 
 from __future__ import unicode_literals
-from ftfy.chardata import (possible_encoding, CHARMAPS,
+from ftfy.chardata import (possible_encoding,
                            FIXABLE_CHARMAP_ENCODINGS, CONTROL_CHARS)
 from ftfy.badness import text_cost
 from ftfy.compatibility import (htmlentitydefs, unichr, bytes_to_ints,
@@ -114,8 +114,8 @@ def fix_text_encoding(text):
         # Add a penalty if we used a particularly obsolete encoding. The result
         # is that we won't use these encodings unless they can successfully
         # replace multiple characters.
-        if ('sloppy_encode', 'macroman') in plan_so_far or\
-           ('sloppy_encode', 'cp437') in plan_so_far:
+        if ('encode', 'macroman') in plan_so_far or\
+           ('encode', 'cp437') in plan_so_far:
             cost += 2
 
         print((text, plan, cost))
@@ -154,23 +154,7 @@ def fix_text_and_explain(text):
     for encoding in FIXABLE_CHARMAP_ENCODINGS:
         if possible_encoding(text, encoding):
             print('possible encoding: %s' % encoding)
-            # This is an ugly-looking way to get the bytes that represent
-            # the text in this encoding. The reason we can't necessarily
-            # use .encode(encoding) is that the decoder is very likely
-            # to have been sloppier than Python.
-            #
-            # The decoder might have left bytes unchanged when they're not
-            # part of the encoding. It might represent b'\x81' as u'\x81'
-            # in Windows-1252, while Python would claim that using byte
-            # 0x81 in Windows-1252 is an error.
-            #
-            # So what we do here is we use the .translate method of Unicode
-            # strings. Using it with the character maps we have computed will
-            # give us back a Unicode string using only code
-            # points up to 0xff. This can then be converted into the intended
-            # bytes by encoding it as Latin-1.
-            sorta_encoded_text = text.translate(CHARMAPS[encoding])
-            encoded_bytes = sorta_encoded_text.encode('latin-1')
+            encoded_bytes = text.encode(encoding)
 
             # Now, find out if it's UTF-8 (or close enough). Otherwise,
             # remember the encoding for later.
@@ -179,7 +163,7 @@ def fix_text_and_explain(text):
                 if b'\xed' in encoded_bytes or b'\xc0' in encoded_bytes:
                     decoding = 'utf-8-variants'
                 fixed = encoded_bytes.decode(decoding)
-                steps = [('sloppy_encode', encoding), ('decode', decoding)]
+                steps = [('encode', encoding), ('decode', decoding)]
                 return fixed, steps
             except UnicodeDecodeError:
                 possible_1byte_encodings.append(encoding)
@@ -199,7 +183,9 @@ def fix_text_and_explain(text):
         else:
             # Otherwise, it means we have characters that are in Latin-1 but
             # not in Windows-1252. Those are C1 control characters. Nobody
-            # wants those. Assume they were meant to be Windows-1252.
+            # wants those. Assume they were meant to be Windows-1252. Don't
+            # use the sloppy codec, because bad Windows-1252 characters are
+            # a bad sign.
             encoded = text.encode('latin-1')
             try:
                 fixed = encoded.decode('windows-1252')

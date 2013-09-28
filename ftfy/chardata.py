@@ -9,32 +9,32 @@ import re
 import zlib
 from pkg_resources import resource_string
 from ftfy.compatibility import unichr
-
+import ftfy.bad_codecs
 
 # These are encodings that map each byte to a particular character.
 CHARMAP_ENCODINGS = [
     'latin-1',
-    'windows-1252',
+    'sloppy-windows-1252',
     'macroman',
     'cp437',
-    'windows-1251',
-    'windows-1250',
-    'windows-1253',
-    'windows-1254',
-    'windows-1255',
-    'windows-1256',
-    'windows-1257',
-    'windows-1258',
+    'sloppy-windows-1251',
+    'sloppy-windows-1250',
+    'sloppy-windows-1253',
+    'sloppy-windows-1254',
+    'sloppy-windows-1255',
+    'sloppy-windows-1256',
+    'sloppy-windows-1257',
+    'sloppy-windows-1258',
     'iso-8859-2',
-    'iso-8859-3',
+    'sloppy-iso-8859-3',
     'iso-8859-4',
     'iso-8859-5',
-    'iso-8859-6',
-    'iso-8859-7',
+    'sloppy-iso-8859-6',
+    'sloppy-iso-8859-7',
     # iso-8859-8 is included in windows-1255
     'iso-8859-9',
     'iso-8859-10',
-    'iso-8859-11',
+    'sloppy-iso-8859-11',
     # iso-8859-12 doesn't exist
     'iso-8859-13',
     'iso-8859-14',
@@ -59,15 +59,17 @@ CHARMAP_ENCODINGS = [
 # order that they should be tried.
 FIXABLE_CHARMAP_ENCODINGS = [
     'latin-1',
-    'windows-1252',
+    'sloppy-windows-1252',
     'macroman',
     'cp437',
-    'windows-1251',
+    'sloppy-windows-1251',
 ]
 
 
-def _build_charmaps():
+def _build_regexes():
     """
+    [outdated docs]
+
     CHARMAPS contains mappings from bytes to characters, for each single-byte
     encoding we know about.
 
@@ -93,29 +95,12 @@ def _build_charmaps():
         'ascii': re.compile('^[\x00-\x7f]*$'),
     }
     for encoding in CHARMAP_ENCODINGS:
-        charmap = {}
-        inverse_charmap = {}
-        for codepoint in range(0, 0x80):
-            charmap[codepoint] = unichr(codepoint)
-            inverse_charmap[codepoint] = unichr(codepoint)
-        for codepoint in range(0x80, 0x100):
-            char = unichr(codepoint)
-            encoded_char = char.encode('latin-1')
-            try:
-                decoded_char = encoded_char.decode(encoding)
-            except ValueError:
-                decoded_char = char
-            charmap[ord(decoded_char)] = char
-            inverse_charmap[ord(char)] = decoded_char
-
-        charlist = [unichr(codept) for codept in sorted(charmap.keys())
-                    if codept >= 0x80]
-        regex = '^[\x00-\x7f{}]*$'.format(''.join(charlist))
-        charmaps[encoding] = charmap
-        inverse_charmaps[encoding] = inverse_charmap
+        latin1table = ''.join(chr(i) for i in range(256))
+        charlist = latin1table.encode('latin-1').decode(encoding)
+        regex = '^[\x00-\x7f{}]*$'.format(charlist)
         encoding_regexes[encoding] = re.compile(regex)
-    return charmaps, inverse_charmaps, encoding_regexes
-CHARMAPS, INVERSE_CHARMAPS, ENCODING_REGEXES = _build_charmaps()
+    return encoding_regexes
+ENCODING_REGEXES = _build_regexes()
 
 
 def possible_encoding(text, encoding):
