@@ -1,15 +1,16 @@
 from __future__ import unicode_literals
 import codecs
 from encodings import normalize_encoding
+from ftfy.compatibility import unichr
 
 REPLACEMENT_CHAR = '\ufffd'
 
 def make_sloppy_codec(encoding):
     decoding_list = []
     for byte in range(0x100):
-        char = chr(byte).encode('latin-1').decode(encoding, errors='replace')
+        char = unichr(byte).encode('latin-1').decode(encoding, errors='replace')
         if char == REPLACEMENT_CHAR:
-            char = chr(byte)
+            char = unichr(byte)
         decoding_list.append(char)
     decoding_table = ''.join(decoding_list)
     encoding_table = codecs.charmap_build(decoding_table)

@@ -1,12 +1,12 @@
+# Ways to do this classifier better:
+# - train on cesu-8
+# - do the hashing right away
+
 import numpy as np
 import codecs
-from ftfy.chardata import CHARMAPS, CHARMAP_ENCODINGS, possible_encoding
-from ftfy.compatibility import PYTHON2
+from ftfy.chardata import possible_encoding
+from ftfy.autodecode.classifier import ENCODINGS
 
-ENCODINGS = [
-    'utf-8', 'big5+', 'gb18030', 'cp932', 'cp949', 'euc-jp'
-] + CHARMAP_ENCODINGS
-M = 511111  # a prime number
 N = len(ENCODINGS)
 
 
@@ -24,23 +24,6 @@ def row_to_trigram(row):
     return bytes([b0, b1, b2])
 
 
-def sloppy_encode(text, encoding):
-    if encoding in CHARMAP_ENCODINGS:
-        return text.translate(CHARMAPS[encoding]).encode('latin-1')
-    else:
-        return text.encode(encoding)
-
-def sloppy_possible_encoding(text, encoding):
-    if encoding in CHARMAP_ENCODINGS:
-        return possible_encoding(text, encoding)
-    else:
-        try:
-            text.encode(encoding)
-            return True
-        except UnicodeEncodeError:
-            return False
-
-
 def learn_matrix(datafile):
     matrix = np.ones((1 << 23, N), np.float32, order='F')
     count = 0
@@ -52,18 +35,20 @@ def learn_matrix(datafile):
             continue
 
         for i, encoding in enumerate(ENCODINGS):
-            if sloppy_possible_encoding(line, encoding):
-                linebytes = sloppy_encode(line, encoding)
+            try:
+                linebytes = line.encode(encoding)
                 for pos in range(1, len(linebytes) - 1):
                     if linebytes[pos] >= 0x80:
                         trigram = linebytes[pos-1:pos+2]
                         assert len(trigram) == 3
                         row = trigram_to_row(trigram)
                         matrix[row, i] += 1
+            except UnicodeEncodeError:
+                pass
 
     norms = np.sum(matrix * matrix, axis=1)[:, np.newaxis]
     return matrix / norms
 
 if __name__ == '__main__':
     matrix = learn_matrix('../../testdata/all.txt')
-    np.save('classifier.npy', matrix)
+    np.save('data/_new_classifier.npy', matrix)

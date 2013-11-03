@@ -1,3 +1,15 @@
+# notes on the relationship between ftfy and autodecode:
+# autodecode contains a big huge classifier. It shouldn't really be a
+# dependency.
+#
+# Thus autodecode should be its own repository.
+#
+# ftfy.bad_codecs didn't even turn out to have much to do with autodecode.
+# (We could benefit from a full ftfy.bad_codecs.cesu8.)
+#
+# Learn condensed heuristics from autodecode for 1252 <-> MacRoman mojibake,
+# and include their results in a future version of ftfy.
+
 from ftfy.chardata import possible_encoding
 
 
