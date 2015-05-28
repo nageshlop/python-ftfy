@@ -223,29 +223,24 @@ def fix_one_step_and_explain(text):
     # be read as Windows-1252, because those two encodings in particular are
     # easily confused.
     if 'latin-1' in possible_1byte_encodings:
-        if 'windows-1252' in possible_1byte_encodings:
-            # This text is in the intersection of Latin-1 and
-            # Windows-1252, so it's probably legit.
-            return text, []
-        else:
-            # Otherwise, it means we have characters that are in Latin-1 but
-            # not in Windows-1252. Those are C1 control characters. Nobody
-            # wants those. Assume they were meant to be Windows-1252. Don't
-            # use the sloppy codec, because bad Windows-1252 characters are
-            # a bad sign.
-            encoded = text.encode('latin-1')
-            try:
-                fixed = encoded.decode('windows-1252')
-                steps = []
-                if fixed != text:
-                    steps = [('encode', 'latin-1', 0),
-                             ('decode', 'windows-1252', 1)]
-                return fixed, steps
-            except UnicodeDecodeError:
-                # This text contained characters that don't even make sense
-                # if you assume they were supposed to be Windows-1252. In
-                # that case, let's not assume anything.
-                pass
+        # If switching from Latin-1 to Windows-1252 changes the text, it means
+        # we have characters that are in Latin-1 but not in Windows-1252. Those
+        # are C1 control characters. Nobody wants those. Assume they were meant
+        # to be Windows-1252. Don't use the sloppy codec, because bad
+        # Windows-1252 characters are a bad sign.
+        encoded = text.encode('latin-1')
+        try:
+            fixed = encoded.decode('windows-1252')
+            steps = []
+            if fixed != text:
+                steps = [('encode', 'latin-1', 0),
+                         ('decode', 'windows-1252', 1)]
+            return fixed, steps
+        except UnicodeDecodeError:
+            # This text contained characters that don't even make sense
+            # if you assume they were supposed to be Windows-1252. In
+            # that case, let's not assume anything.
+            pass
 
     # The cases that remain are mixups between two different single-byte
     # encodings, and not the common case of Latin-1 vs. Windows-1252.
