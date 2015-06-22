@@ -46,9 +46,6 @@ The following encodings will become defined:
 Aliases such as "sloppy-cp1252" for "sloppy-windows-1252" will also be
 defined.
 
-Only sloppy-windows-1251 and sloppy-windows-1252 are used by the rest of ftfy;
-the rest are rather uncommon.
-
 Here are some examples, using `ftfy.explain_unicode` to illustrate how
 sloppy-windows-1252 merges Windows-1252 with Latin-1:
 
