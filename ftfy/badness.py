@@ -67,6 +67,10 @@ def _make_weirdness_regex():
     groups.append('P')
     groups.append('_')
 
+    # Match characters that are simply extremely rare when used for their
+    # actual purpose, as opposed to their use in mojibake.
+    groups.append('R')
+
     # Match adjacent characters from any different pair of these categories:
     # - Modifier marks (M)
     # - Letter modifiers (m)

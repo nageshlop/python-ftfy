@@ -119,6 +119,11 @@ def make_char_data_file(do_it_anyway=False):
     for char in "^~`´˝＾｀":
         cclasses[ord(char)] = 'o'
 
+    # Specific characters that are often used in mojibake and very rarely
+    # used for their intended purpose.
+    for char in "ƒ‡‰¹÷⌐⌠⌡◊ﬁﬂ˛˜":
+        cclasses[ord(char)] = 'R'
+
     out = open('char_classes.dat', 'wb')
     out.write(zlib.compress(''.join(cclasses).encode('ascii')))
     out.close()
