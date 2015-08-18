@@ -19,7 +19,7 @@ def test_bmp_characters():
             garble = char.encode('utf-8').decode('latin-1')
             # Exclude characters whose re-encoding is protected by the
             # 'sequence_weirdness' metric
-            if sequence_weirdness(garble) >= 0:
+            if sequence_weirdness(garble) >= sequence_weirdness(char):
                 garble2 = char.encode('utf-8').decode('latin-1').encode('utf-8').decode('latin-1')
                 for garb in (garble, garble2):
                     fixed, plan = fix_encoding_and_explain(garb)

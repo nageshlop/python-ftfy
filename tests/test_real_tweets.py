@@ -62,9 +62,24 @@ TEST_CASES = [
     # You tried
     ('I just figured out how to tweet emojis! â\x9a½í\xa0½í¸\x80í\xa0½í¸\x81í\xa0½í¸\x82í\xa0½í¸\x86í\xa0½í¸\x8eí\xa0½í¸\x8eí\xa0½í¸\x8eí\xa0½í¸\x8e',
      'I just figured out how to tweet emojis! ⚽😀😁😂😆😎😎😎😎'),
+
     ('CÃ\xa0nan nan GÃ\xa0idheal', 'Cànan nan Gàidheal'),
 
+    # Fix single-byte encoding mixups
+    ('Inglaterra: Es un lugar que nunca te aburrir‡s',
+     'Inglaterra: Es un lugar que nunca te aburrirás'),
+
+    # Examples from martinblech
+    ('ÖÉËÁ ÌÅ - ÂÏÓÊÏÐÏÕËÏÓ - ×ÉÙÔÇÓ', 'ΦΙΛΑ ΜΕ - ΒΟΣΚΟΠΟΥΛΟΣ - ΧΙΩΤΗΣ'),
+    ('ÑÅÊÐÅÒ - Áåñïå÷íûé Åçäîê - 0:00', 'СЕКРЕТ - Беспечный Ездок - 0:00'),
+    ('¼Ò¸®¿¤ - »ç¶ûÇÏ´Â ÀÚ¿©', '소리엘 - 사랑하는 자여'),
+
+    # A mix-up between big5 and gbk. That's not usually recoverable, but in
+    # this remarkable case, it is.
+    ('斕祥眭耋腔岈', '你不知道的事'),
+
     ## Current false positives:
+    #('Feijoada do Rio Othon Palace no Bossa Café\x80\x80', 'Feijoada do Rio Othon Palace no Bossa Café\x80\x80')
     #("├┤a┼┐a┼┐a┼┐a┼┐a", "├┤a┼┐a┼┐a┼┐a┼┐a"),
     #("ESSE CARA AI QUEM É¿", "ESSE CARA AI QUEM É¿"),
     #("``hogwarts nao existe, voce nao vai pegar o trem pra lá´´", "``hogwarts nao existe, voce nao vai pegar o trem pra lá´´"),

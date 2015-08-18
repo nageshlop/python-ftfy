@@ -81,6 +81,8 @@ def exclude_trigram(trigram):
     if trigram[0] == trigram[1] and trigram[1] == trigram[2]:
         # Repeated letters might not be mojibake
         return True
+    if set(trigram) & set("'’\x92\\"):
+        return True
     if min(trigram) >= '\u3000':
         # Han characters that are mojibake are extremely unlikely to
         # overlap with ones that aren't
@@ -88,12 +90,12 @@ def exclude_trigram(trigram):
     # Exclude trigrams that follow one of the patterns above of capital
     # and lowercase Latin letters (Ll), non-Latin letters (Aa), and
     # uncased characters and combining marks (CM), as long as they contain
-    # no more than 1 accent or 2 combining marks.
+    # no more than 2 accents or combining marks.
     #
     # Trigrams of this form are too likely to appear in normal,
     # unusually-spelled text, even if they don't appear in wordfreq's
     # vocabulary.
-    return chars_to_classes(trigram) in EXCLUDE_CLASSES and len(normalize('NFD', trigram)) <= 4
+    return chars_to_classes(trigram) in EXCLUDE_CLASSES and len(normalize('NFD', trigram)) <= 5
 
 
 def find_mojibake(normal_freqs, baked_freqs):
@@ -110,8 +112,8 @@ def find_mojibake(normal_freqs, baked_freqs):
 DETECTING_CODE = """
 import re
 
-MOJIBAKE_LOOKUP = {0}
-MOJIBAKE_RE = re.compile({1!r})
+HEURISTIC_LOOKUP = {0}
+HEURISTIC_RE = re.compile({1!r})
 """
 
 def write_detector(found):
@@ -119,7 +121,7 @@ def write_detector(found):
     for freq, trigram, encoder, decoder in found:
         mojidict[trigram].append((encoder, decoder))
     regex_text = '|'.join(sorted(mojidict))
-    with open('detector.py', 'w', encoding='utf-8') as out:
+    with open('tricky_mojibake.py', 'w', encoding='utf-8') as out:
         mojidict_format = pprint.pformat(dict(mojidict))
         print(DETECTING_CODE.format(mojidict_format, regex_text), file=out)
 

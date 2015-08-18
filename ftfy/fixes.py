@@ -11,10 +11,13 @@ from ftfy.chardata import (possible_encoding, CHARMAP_ENCODINGS,
                            LOSSY_UTF8_RE, SINGLE_QUOTE_RE, DOUBLE_QUOTE_RE)
 from ftfy.badness import text_cost
 from ftfy.compatibility import htmlentitydefs, unichr
+from ftfy.tricky_mojibake import HEURISTIC_RE, HEURISTIC_LOOKUP
+from collections import Counter
 import re
 import sys
 import codecs
 import warnings
+import itertools
 
 
 BYTES_ERROR_TEXT = """Hey wait, this isn't Unicode.
@@ -126,7 +129,14 @@ def fix_text_encoding(text):
 ENCODING_COSTS = {
     'macroman': 2,
     'cp437': 3,
-    'sloppy-windows-1251': 5
+    'sloppy-windows-1250': 7,
+    'sloppy-windows-1251': 5,
+    'sloppy-windows-1252': 0,
+    'sloppy-windows-1253': 7,
+    'sloppy-windows-1256': 7,
+    'iso-8859-2': 7,
+    'iso-8859-5': 11,
+    'iso-8859-6': 7,
 }
 
 
@@ -213,6 +223,22 @@ def fix_one_step_and_explain(text):
 
             except UnicodeDecodeError:
                 possible_1byte_encodings.append(encoding)
+
+    heuristic_sequences = HEURISTIC_RE.findall(text)
+    if heuristic_sequences:
+        possibilities = []
+        for seq in heuristic_sequences:
+            possibilities.extend(HEURISTIC_LOOKUP[seq])
+        counts = Counter(possibilities)
+        (encoder, decoder), occurrences = counts.most_common()[0]
+        try:
+            fixed = text.encode(encoder).decode(decoder)
+            return fixed, [
+                ('encode', encoder, ENCODING_COSTS.get(encoder, 0) - len(heuristic_sequences) * 2),
+                ('decode', decoder, ENCODING_COSTS.get(decoder, 0))
+            ]
+        except UnicodeError:
+            pass
 
     # Look for a-hat-euro sequences that remain, and fix them in isolation.
     if PARTIAL_UTF8_PUNCT_RE.search(text):
