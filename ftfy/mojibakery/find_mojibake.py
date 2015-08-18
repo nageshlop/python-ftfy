@@ -74,14 +74,14 @@ def build_trigrams():
 normal_freqs, baked_freqs = build_trigrams()
 
 
-EXCLUDE_CLASSES = {'LLL', 'Lll', 'lll', 'AAA', 'Aaa', 'aaa', 'CCC', 'CCM', 'CMC', 'MCC', 'CMM', 'MCM', 'MMC'}
+EXCLUDE_CLASSES = {'LLL', 'Lll', 'lLl', 'llL', 'lll', 'AAA', 'Aaa', 'aAa', 'aaA', 'aaa', 'CCC', 'CCM', 'CMC', 'MCC', 'CMM', 'MCM', 'MMC'}
 
 
 def exclude_trigram(trigram):
     if trigram[0] == trigram[1] and trigram[1] == trigram[2]:
         # Repeated letters might not be mojibake
         return True
-    if set(trigram) & set("'’\x92\\"):
+    if set(trigram) & set("'’\x92\xa0\\|()[]{}.+*"):
         return True
     if min(trigram) >= '\u3000':
         # Han characters that are mojibake are extremely unlikely to

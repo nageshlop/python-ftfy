@@ -68,15 +68,16 @@ TEST_CASES = [
     # Fix single-byte encoding mixups
     ('Inglaterra: Es un lugar que nunca te aburrir‡s',
      'Inglaterra: Es un lugar que nunca te aburrirás'),
+    ('èíñòðóêöèÿ', 'инструкция'),
 
     # Examples from martinblech
     ('ÖÉËÁ ÌÅ - ÂÏÓÊÏÐÏÕËÏÓ - ×ÉÙÔÇÓ', 'ΦΙΛΑ ΜΕ - ΒΟΣΚΟΠΟΥΛΟΣ - ΧΙΩΤΗΣ'),
     ('ÑÅÊÐÅÒ - Áåñïå÷íûé Åçäîê - 0:00', 'СЕКРЕТ - Беспечный Ездок - 0:00'),
     ('¼Ò¸®¿¤ - »ç¶ûÇÏ´Â ÀÚ¿©', '소리엘 - 사랑하는 자여'),
 
-    # A mix-up between big5 and gbk. That's not usually recoverable, but in
-    # this remarkable case, it is.
-    ('斕祥眭耋腔岈', '你不知道的事'),
+    # Only fix character width; this looks like Shift-JIS/EUC-JP mojibake
+    # but isn't
+    ('(|| * m *)ｳ､ｳｯﾌﾟ･･', '(|| * m *)ウ、ウップ・・'),
 
     ## Current false positives:
     #('Feijoada do Rio Othon Palace no Bossa Café\x80\x80', 'Feijoada do Rio Othon Palace no Bossa Café\x80\x80')

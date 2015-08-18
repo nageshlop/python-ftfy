@@ -129,14 +129,15 @@ def fix_text_encoding(text):
 ENCODING_COSTS = {
     'macroman': 2,
     'cp437': 3,
-    'sloppy-windows-1250': 7,
+    'sloppy-windows-1250': 8,
     'sloppy-windows-1251': 5,
     'sloppy-windows-1252': 0,
-    'sloppy-windows-1253': 7,
-    'sloppy-windows-1256': 7,
-    'iso-8859-2': 7,
-    'iso-8859-5': 11,
-    'iso-8859-6': 7,
+    'sloppy-windows-1253': 8,
+    'sloppy-windows-1256': 8,
+    'iso-8859-2': 8,
+    'iso-8859-5': 13,
+    'iso-8859-6': 8,
+    'shift-jis': 8,
 }
 
 
@@ -152,6 +153,7 @@ def fix_encoding_and_explain(text):
     best_cost = text_cost(text)
     best_plan = []
     plan_so_far = []
+    seen_so_far = set()
     while True:
         prevtext = text
         text, plan = fix_one_step_and_explain(text)
@@ -164,8 +166,9 @@ def fix_encoding_and_explain(text):
             best_cost = cost
             best_version = text
             best_plan = list(plan_so_far)
-        if text == prevtext:
+        if text == prevtext or text in seen_so_far:
             return best_version, best_plan
+        seen_so_far.add(text)
 
 
 def fix_one_step_and_explain(text):

@@ -100,6 +100,8 @@ ENDING_PUNCT_RE = re.compile(
     '\N{RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK}'
     ']'
 )
+ACCENT_SEQUENCE_RE = re.compile('[\xc0-\xff]{4}')
+
 
 def sequence_weirdness(text):
     """
@@ -131,7 +133,11 @@ def sequence_weirdness(text):
     text2 = unicodedata.normalize('NFC', text)
     weirdness = len(WEIRDNESS_RE.findall(chars_to_classes(text2)))
     punct_discount = len(ENDING_PUNCT_RE.findall(text2))
-    return weirdness * 2 - punct_discount
+    accent_sequences = len([
+        seq for seq in ACCENT_SEQUENCE_RE.findall(text2)
+        if len(set(seq)) >= 3
+    ])
+    return weirdness * 2 - punct_discount + accent_sequences
 
 
 def text_cost(text):
