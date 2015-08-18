@@ -7,6 +7,7 @@ from ftfy.chardata import chars_to_classes
 from unicodedata import normalize
 import re
 import json
+import pprint
 
 
 LANGUAGE_ENCODINGS = {
@@ -49,14 +50,14 @@ def add_language_trigrams(normal_freqs, baked_freqs, language):
                             mojibaked = word.encode(enc1).decode(enc2)
                             if mojibaked != word:
                                 for trigram in get_trigrams(mojibaked):
-                                    baked_freqs[(trigram, enc1, enc2)] += freq
+                                    baked_freqs[(trigram, enc2, enc1)] += freq
                         except UnicodeError:
                             pass
                         try:
                             mojibaked = word.encode(enc2).decode(enc1)
                             if mojibaked != word:
                                 for trigram in get_trigrams(mojibaked):
-                                    baked_freqs[(trigram, enc2, enc1)] += freq
+                                    baked_freqs[(trigram, enc1, enc2)] += freq
                         except UnicodeError:
                             pass
 
@@ -77,24 +78,53 @@ EXCLUDE_CLASSES = {'LLL', 'Lll', 'lll', 'AAA', 'Aaa', 'aaa', 'CCC', 'CCM', 'CMC'
 
 
 def exclude_trigram(trigram):
+    if trigram[0] == trigram[1] and trigram[1] == trigram[2]:
+        # Repeated letters might not be mojibake
+        return True
     if min(trigram) >= '\u3000':
+        # Han characters that are mojibake are extremely unlikely to
+        # overlap with ones that aren't
         return False
+    # Exclude trigrams that follow one of the patterns above of capital
+    # and lowercase Latin letters (Ll), non-Latin letters (Aa), and
+    # uncased characters and combining marks (CM), as long as they contain
+    # no more than 1 accent or 2 combining marks.
+    #
+    # Trigrams of this form are too likely to appear in normal,
+    # unusually-spelled text, even if they don't appear in wordfreq's
+    # vocabulary.
     return chars_to_classes(trigram) in EXCLUDE_CLASSES and len(normalize('NFD', trigram)) <= 4
 
 
 def find_mojibake(normal_freqs, baked_freqs):
     mojibake_items = []
-    for (trigram, enc1, enc2), freq in baked_freqs.items():
+    for (trigram, encoder, decoder), freq in baked_freqs.items():
         if trigram not in normal_freqs and trigram.lower() not in normal_freqs and not exclude_trigram(trigram):
             tokenized = ' '.join(wordfreq.simple_tokenize(trigram))
             if len(tokenized) == len(trigram):
-                reencoded = trigram.encode(enc2, errors='replace').decode(enc1, errors='replace')
-                mojibake_items.append((int(freq * 1e6), trigram, enc2, enc1, reencoded))
+                mojibake_items.append((int(freq * 1e6), trigram, encoder, decoder))
     mojibake_items.sort(reverse=True)
     return mojibake_items[:20000]
 
 
+DETECTING_CODE = """
+import re
+
+MOJIBAKE_LOOKUP = {0}
+MOJIBAKE_RE = re.compile({1!r})
+"""
+
+def write_detector(found):
+    mojidict = defaultdict(list)
+    for freq, trigram, encoder, decoder in found:
+        mojidict[trigram].append((encoder, decoder))
+    regex_text = '|'.join(sorted(mojidict))
+    with open('detector.py', 'w', encoding='utf-8') as out:
+        mojidict_format = pprint.pformat(dict(mojidict))
+        print(DETECTING_CODE.format(mojidict_format, regex_text), file=out)
+
+
 if __name__ == '__main__':
     found = find_mojibake(normal_freqs, baked_freqs)
-    with open('mojibake-patterns.json', 'w', encoding='utf-8') as out:
-        json.dump(found, out, ensure_ascii=False, indent=2)
+    write_detector(found)
+
