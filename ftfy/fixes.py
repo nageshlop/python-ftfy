@@ -138,6 +138,11 @@ ENCODING_COSTS = {
     'iso-8859-5': 13,
     'iso-8859-6': 8,
     'shift-jis': 8,
+    'euc-jp': 8,
+    'euc-cn': 8,
+    'big5': 8,
+    'gbk': 8,
+    'koi8-r': 8
 }
 
 
