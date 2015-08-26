@@ -83,10 +83,6 @@ def exclude_trigram(trigram):
         return True
     if set(trigram) & set("'’\x92\xa0\\|()[]{}.+*"):
         return True
-    if min(trigram) >= '\u3000':
-        # Han characters that are mojibake are extremely unlikely to
-        # overlap with ones that aren't
-        return False
     # Exclude trigrams that follow one of the patterns above of capital
     # and lowercase Latin letters (Ll), non-Latin letters (Aa), and
     # uncased characters and combining marks (CM), as long as they contain
