@@ -11,7 +11,7 @@ from ftfy.chardata import (possible_encoding, CHARMAP_ENCODINGS,
                            LOSSY_UTF8_RE, SINGLE_QUOTE_RE, DOUBLE_QUOTE_RE)
 from ftfy.badness import text_cost
 from ftfy.compatibility import htmlentitydefs, unichr
-from ftfy.tricky_mojibake import HEURISTIC_RE, HEURISTIC_LOOKUP
+from ftfy._heuristic import HEURISTIC_RE, HEURISTIC_LOOKUP
 from collections import Counter
 import re
 import sys
@@ -127,22 +127,26 @@ def fix_text_encoding(text):
 # additional cost to using encodings that are rarer than Windows-1252, so
 # that these encodings will only be used if they fix multiple problems.
 ENCODING_COSTS = {
+    'utf-8': 0,
+    'iso-8859-1': 0,
+    'sloppy-windows-1252': 0,
     'macroman': 2,
     'cp437': 3,
-    'sloppy-windows-1250': 8,
     'sloppy-windows-1251': 5,
-    'sloppy-windows-1252': 0,
+    'sloppy-windows-1250': 8,
     'sloppy-windows-1253': 8,
     'sloppy-windows-1256': 8,
     'iso-8859-2': 8,
-    'iso-8859-5': 13,
     'iso-8859-6': 8,
     'shift-jis': 8,
     'euc-jp': 8,
     'euc-cn': 8,
     'big5': 8,
     'gbk': 8,
-    'koi8-r': 8
+    'koi8-r': 8,
+    'iso-8859-5': 13,
+    'cp850': 13,
+    'cp866': 13
 }
 
 

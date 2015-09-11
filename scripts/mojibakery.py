@@ -1,4 +1,27 @@
 # coding: utf-8
+from __future__ import unicode_literals
+"""
+The 'mojibakery' cooks up some relevant examples of mojibake in several
+languages, from which we can learn a heuristic that detects certain subtle
+forms of mojibake, especially those that map single bytes to other single
+bytes.
+
+Why do we use synthetic examples? Because there's no good test corpus of real
+mojibake, and if there were one there would probably be mojibake in the
+"correct" data too. Realistically, every sufficiently large data set that
+hasn't been smashed to ASCII has unintended mojibake in it.
+
+Also, when the answer 'False' is correct 99.8% of the time and false positives
+are the worst case, the best thing a typical machine learning algorithm could
+do is learn to always output 'False'.
+
+Instead of relying on insufficiently-labeled real data, then, we will use
+lists of common words (from the wordfreq package) to create examples of likely
+mojibake. Trigrams that frequently appear in these examples and never appear in
+clean text (with some added safeguards against weird typography) will be used
+to detect mojibake.
+"""
+
 import wordfreq
 from collections import defaultdict
 from operator import itemgetter
@@ -8,23 +31,27 @@ from unicodedata import normalize
 import re
 import json
 import pprint
+import sys
 
 
 LANGUAGE_ENCODINGS = {
     'ar': ['iso-8859-6', 'sloppy-windows-1256'],
-    'de': ['macroman', 'iso-8859-2', 'cp437'],
+    'de': ['macroman', 'iso-8859-2', 'cp437', 'cp850'],
     'el': ['sloppy-windows-1253'],
-    'en': ['macroman', 'cp437'],
-    'es': ['macroman', 'cp437'],
-    'fr': ['macroman', 'cp437'],
-    'id': ['macroman', 'cp437'],
+    'en': ['macroman', 'cp437', 'cp850'],
+    'es': ['macroman', 'cp437', 'cp850'],
+    'fr': ['macroman', 'cp437', 'cp850'],
+    'id': ['macroman', 'cp437', 'cp850'],
     'ja': ['shift-jis', 'euc-jp'],
     'ko': ['euc-kr'],
     'ms': ['macroman', 'cp437'],
-    'nl': ['macroman', 'cp437'],
-    'pt': ['macroman', 'cp437'],
-    'ru': ['sloppy-windows-1251', 'koi8-r'],
-    'zh': ['euc-cn', 'gbk', 'big5']
+    'nl': ['macroman', 'cp437', 'cp850'],
+    'pl': ['iso-8859-2', 'windows-1250'],
+    'pt': ['macroman', 'cp437', 'cp850'],
+    'ru': ['sloppy-windows-1251', 'koi8-r', 'iso-8859-5', 'cp866'],
+    'sv': ['macroman', 'iso-8859-2', 'cp437', 'cp850'],
+    'tr': ['macroman', 'cp850', 'iso-8859-9', 'sloppy-windows-1254'],
+    #'zh': ['euc-cn', 'gbk', 'big5']
 }
 COMMON_ENCODINGS = ['iso-8859-1', 'sloppy-windows-1252', 'utf-8']
 
@@ -43,21 +70,14 @@ def add_language_trigrams(normal_freqs, baked_freqs, language):
             for trigram in get_trigrams(padded):
                 normal_freqs[trigram] += freq
 
-            for enc1 in LANGUAGE_ENCODINGS[language]:
+            for enc1 in COMMON_ENCODINGS + LANGUAGE_ENCODINGS[language]:
                 for enc2 in COMMON_ENCODINGS + LANGUAGE_ENCODINGS[language]:
-                    if enc1 != enc2:
+                    if enc1 != enc2 and (enc1 not in COMMON_ENCODINGS or enc2 not in COMMON_ENCODINGS):
                         try:
                             mojibaked = word.encode(enc1).decode(enc2)
                             if mojibaked != word:
                                 for trigram in get_trigrams(mojibaked):
                                     baked_freqs[(trigram, enc2, enc1)] += freq
-                        except UnicodeError:
-                            pass
-                        try:
-                            mojibaked = word.encode(enc2).decode(enc1)
-                            if mojibaked != word:
-                                for trigram in get_trigrams(mojibaked):
-                                    baked_freqs[(trigram, enc1, enc2)] += freq
                         except UnicodeError:
                             pass
 
@@ -102,7 +122,7 @@ def find_mojibake(normal_freqs, baked_freqs):
             if len(tokenized) == len(trigram):
                 mojibake_items.append((int(freq * 1e6), trigram, encoder, decoder))
     mojibake_items.sort(reverse=True)
-    return mojibake_items[:20000]
+    return mojibake_items[:25000]
 
 
 DETECTING_CODE = """
@@ -113,11 +133,15 @@ HEURISTIC_RE = re.compile({1!r})
 """
 
 def write_detector(found):
+    if sys.hexversion < 0x03020000 and not do_it_anyway:
+        raise RuntimeError(
+            "This function should be run in Python 3.2 or later."
+        )
     mojidict = defaultdict(list)
     for freq, trigram, encoder, decoder in found:
         mojidict[trigram].append((encoder, decoder))
     regex_text = '|'.join(sorted(mojidict))
-    with open('tricky_mojibake.py', 'w', encoding='utf-8') as out:
+    with open('_heuristic.py', 'w', encoding='utf-8') as out:
         mojidict_format = pprint.pformat(dict(mojidict))
         print(DETECTING_CODE.format(mojidict_format, regex_text), file=out)
 
