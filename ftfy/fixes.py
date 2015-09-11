@@ -242,6 +242,8 @@ def fix_one_step_and_explain(text):
         for seq in heuristic_sequences:
             possibilities.extend(HEURISTIC_LOOKUP[seq])
         counts = Counter(possibilities)
+
+        # FIXME: this is non-deterministic in the face of ties
         (encoder, decoder), occurrences = counts.most_common()[0]
         try:
             fixed = text.encode(encoder).decode(decoder)
