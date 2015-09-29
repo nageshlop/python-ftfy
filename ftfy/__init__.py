@@ -32,7 +32,8 @@ def fix_text(text,
              remove_control_chars=True,
              remove_bom=True,
              normalization='NFC',
-             max_decode_length=10**6):
+             max_decode_length=10**6,
+             cleverness=1):
     r"""
     Given Unicode text as input, fix inconsistencies and glitches in it,
     such as mojibake.
@@ -177,7 +178,8 @@ def fix_text(text,
                 fix_surrogates=fix_surrogates,
                 remove_control_chars=remove_control_chars,
                 remove_bom=remove_bom,
-                normalization=normalization
+                normalization=normalization,
+                cleverness=cleverness
             )
         )
         pos = textbreak
@@ -202,7 +204,8 @@ def fix_file(input_file,
              fix_surrogates=True,
              remove_control_chars=True,
              remove_bom=True,
-             normalization='NFC'):
+             normalization='NFC',
+             cleverness=1):
     """
     Fix text that is found in a file.
 
@@ -234,7 +237,8 @@ def fix_file(input_file,
             fix_surrogates=fix_surrogates,
             remove_control_chars=remove_control_chars,
             remove_bom=remove_bom,
-            normalization=normalization
+            normalization=normalization,
+            cleverness=cleverness
         )
 
 
@@ -249,7 +253,8 @@ def fix_text_segment(text,
                      fix_surrogates=True,
                      remove_control_chars=True,
                      remove_bom=True,
-                     normalization='NFC'):
+                     normalization='NFC',
+                     cleverness=1):
     """
     Apply fixes to text in a single chunk. This could be a line of text
     within a larger run of `fix_text`, or it could be a larger amount
@@ -269,7 +274,7 @@ def fix_text_segment(text,
         if remove_terminal_escapes:
             text = fixes.remove_terminal_escapes(text)
         if fix_encoding:
-            text = fixes.fix_text_encoding(text)
+            text = fixes.fix_encoding(text, cleverness=cleverness)
         if fix_latin_ligatures:
             text = fixes.fix_latin_ligatures(text)
         if fix_character_width:

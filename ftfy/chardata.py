@@ -22,6 +22,11 @@ CHARMAP_ENCODINGS = [
 ]
 
 
+# The two most common encodings. These were the only encodings that early
+# versions of ftfy checked for, and the ones it will try with cleverness=0.
+COMMON_ENCODINGS = ['latin-1', 'sloppy-windows-1252']
+
+
 def _build_regexes():
     """
     ENCODING_REGEXES contain reasonably fast ways to detect if we

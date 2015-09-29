@@ -5,7 +5,8 @@ can perform.
 """
 
 from __future__ import unicode_literals
-from ftfy.chardata import (possible_encoding, CHARMAP_ENCODINGS,
+from ftfy.chardata import (possible_encoding,
+                           CHARMAP_ENCODINGS, COMMON_ENCODINGS,
                            CONTROL_CHARS, LIGATURES, WIDTH_MAP,
                            PARTIAL_UTF8_PUNCT_RE, ALTERED_UTF8_RE,
                            LOSSY_UTF8_RE, SINGLE_QUOTE_RE, DOUBLE_QUOTE_RE)
@@ -41,7 +42,7 @@ If you're confused by this, please read the Python Unicode HOWTO:
 """ % sys.version_info[0]
 
 
-def fix_encoding(text):
+def fix_encoding(text, cleverness=1):
     r"""
     Fix text with incorrectly-decoded garbage ("mojibake") whenever possible.
 
@@ -109,7 +110,7 @@ def fix_encoding(text):
     The best version of the text is found using
     :func:`ftfy.badness.text_cost`.
     """
-    text, _ = fix_encoding_and_explain(text)
+    text, _ = fix_encoding_and_explain(text, cleverness)
     return text
 
 
@@ -128,6 +129,7 @@ def fix_text_encoding(text):
 # that these encodings will only be used if they fix multiple problems.
 ENCODING_COSTS = {
     'utf-8': 0,
+    'latin-1': 0,
     'iso-8859-1': 0,
     'sloppy-windows-1252': 0,
     'macroman': 2,
@@ -135,22 +137,25 @@ ENCODING_COSTS = {
     'sloppy-windows-1251': 5,
     'sloppy-windows-1250': 8,
     'sloppy-windows-1253': 8,
+    'sloppy-windows-1254': 8,
     'sloppy-windows-1256': 8,
     'iso-8859-2': 8,
     'iso-8859-6': 8,
     'shift-jis': 8,
     'euc-jp': 8,
     'euc-cn': 8,
+    'euc-kr': 8,
     'big5': 8,
     'gbk': 8,
     'koi8-r': 8,
     'iso-8859-5': 13,
     'cp850': 13,
-    'cp866': 13
+    'cp866': 13,
+    'euc-tw': 13,
 }
 
 
-def fix_encoding_and_explain(text):
+def fix_encoding_and_explain(text, cleverness=1):
     """
     Re-decodes text that has been decoded incorrectly, and also return a
     "plan" indicating all the steps required to fix it.
@@ -165,9 +170,10 @@ def fix_encoding_and_explain(text):
     seen_so_far = set()
     while True:
         prevtext = text
-        text, plan = fix_one_step_and_explain(text)
+        text, plan = fix_one_step_and_explain(text, cleverness)
         plan_so_far.extend(plan)
         cost = text_cost(text)
+
         for _, _, step_cost in plan_so_far:
             cost += step_cost
 
@@ -175,12 +181,14 @@ def fix_encoding_and_explain(text):
             best_cost = cost
             best_version = text
             best_plan = list(plan_so_far)
+
         if text == prevtext or text in seen_so_far:
             return best_version, best_plan
+
         seen_so_far.add(text)
 
 
-def fix_one_step_and_explain(text):
+def fix_one_step_and_explain(text, cleverness=1):
     """
     Performs a single step of re-decoding text that's been decoded incorrectly.
 
@@ -190,6 +198,11 @@ def fix_one_step_and_explain(text):
         raise UnicodeError(BYTES_ERROR_TEXT)
     if len(text) == 0:
         return text, []
+
+    if cleverness == 0:
+        encodings_to_try = COMMON_ENCODINGS
+    else:
+        encodings_to_try = CHARMAP_ENCODINGS
 
     # The first plan is to return ASCII text unchanged.
     if possible_encoding(text, 'ascii'):
@@ -203,10 +216,10 @@ def fix_one_step_and_explain(text):
     # Suppose the text was supposed to be UTF-8, but it was decoded using
     # a single-byte encoding instead. When these cases can be fixed, they
     # are usually the correct thing to do, so try them next.
-    for encoding in CHARMAP_ENCODINGS:
+    for encoding in encodings_to_try:
         if possible_encoding(text, encoding):
             encoded_bytes = text.encode(encoding)
-            encode_step = ('encode', encoding, ENCODING_COSTS.get(encoding, 0))
+            encode_step = ('encode', encoding, ENCODING_COSTS[encoding])
             transcode_steps = []
 
             # Now, find out if it's UTF-8 (or close enough). Otherwise,
@@ -236,26 +249,28 @@ def fix_one_step_and_explain(text):
             except UnicodeDecodeError:
                 possible_1byte_encodings.append(encoding)
 
-    heuristic_sequences = HEURISTIC_RE.findall(text)
-    if heuristic_sequences:
-        possibilities = []
-        for seq in heuristic_sequences:
-            possibilities.extend(HEURISTIC_LOOKUP[seq])
-        counts = Counter(possibilities)
+    if cleverness >= 2:
+        heuristic_sequences = HEURISTIC_RE.findall(text)
+        if heuristic_sequences:
+            possibilities = []
+            for seq in heuristic_sequences:
+                possibilities.extend(HEURISTIC_LOOKUP[seq])
+            counts = Counter(possibilities)
+            print(counts)
 
-        # FIXME: this is non-deterministic in the face of ties
-        (encoder, decoder), occurrences = counts.most_common()[0]
-        try:
-            fixed = text.encode(encoder).decode(decoder)
-            return fixed, [
-                ('encode', encoder, ENCODING_COSTS.get(encoder, 0) - len(heuristic_sequences) * 2),
-                ('decode', decoder, ENCODING_COSTS.get(decoder, 0))
-            ]
-        except UnicodeError:
-            pass
+            most_common = sorted(counts, key=lambda item: (-counts[item], item))
+            encoder, decoder = most_common[0]
+            try:
+                fixed = text.encode(encoder).decode(decoder)
+                return fixed, [
+                    ('encode', encoder, ENCODING_COSTS.get(encoder, 100) - len(heuristic_sequences) * 2),
+                    ('decode', decoder, ENCODING_COSTS.get(decoder, 100))
+                ]
+            except UnicodeError:
+                pass
 
     # Look for a-hat-euro sequences that remain, and fix them in isolation.
-    if PARTIAL_UTF8_PUNCT_RE.search(text):
+    if cleverness >= 1 and PARTIAL_UTF8_PUNCT_RE.search(text):
         steps = [('transcode', 'fix_partial_utf8_punct_in_1252', 1)]
         fixed = fix_partial_utf8_punct_in_1252(text)
         return fixed, steps

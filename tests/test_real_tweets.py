@@ -133,12 +133,12 @@ def test_real_tweets():
     for orig, target in TEST_CASES:
         # make sure that the fix_encoding step outputs a plan that we can
         # successfully run to reproduce its result
-        encoding_fix, plan = fix_encoding_and_explain(orig)
+        encoding_fix, plan = fix_encoding_and_explain(orig, cleverness=2)
         eq_(apply_plan(orig, plan), encoding_fix)
 
         # make sure we can decode the text as intended
-        eq_(fix_text(orig), target)
+        eq_(fix_text(orig, cleverness=2), target)
 
         # make sure we can decode as intended even with an extra layer of badness
         extra_bad = orig.encode('utf-8').decode('latin-1')
-        eq_(fix_text(extra_bad), target)
+        eq_(fix_text(extra_bad, cleverness=2), target)
