@@ -263,8 +263,8 @@ def fix_one_step_and_explain(text, cleverness=1):
             try:
                 fixed = text.encode(encoder).decode(decoder)
                 return fixed, [
-                    ('encode', encoder, ENCODING_COSTS.get(encoder, 100) - len(heuristic_sequences) * 2),
-                    ('decode', decoder, ENCODING_COSTS.get(decoder, 100))
+                    ('encode', encoder, ENCODING_COSTS[encoder] - len(heuristic_sequences) * 2),
+                    ('decode', decoder, ENCODING_COSTS[decoder])
                 ]
             except UnicodeError:
                 pass
