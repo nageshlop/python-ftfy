@@ -56,6 +56,12 @@ LANGUAGE_ENCODINGS = {
 }
 COMMON_ENCODINGS = ['iso-8859-1', 'sloppy-windows-1252', 'utf-8']
 
+FRAMES = [
+    '“%s”', '‘%s’', '…%s…', '«%s»', '‹%s›', '„%s“', '‚%s‘', '‹%s›',
+    '\xa0%s\xa0',  # non-breaking spaces
+    '\u2013%s\u2013', '\u2014%s\u2014', '\u2015%s\u2015'  # dashes
+]
+
 
 def get_trigrams(text):
     """
@@ -74,20 +80,23 @@ def add_language_trigrams(normal_freqs, baked_freqs, language):
     for baseword in wordfreq.iter_wordlist(language):
         freq = wordfreq.word_frequency(baseword, language)
         for word in set([baseword, baseword.upper()]):
-            padded = ' %s ' % word
-            for trigram in get_trigrams(padded):
-                normal_freqs[trigram] += freq
+            if any(letter.isdigit() for letter in word):
+                continue
+            for frame in FRAMES:
+                padded = frame % word
+                for trigram in get_trigrams(padded):
+                    normal_freqs[trigram] += freq
 
-            for enc1 in COMMON_ENCODINGS + LANGUAGE_ENCODINGS[language]:
-                for enc2 in COMMON_ENCODINGS + LANGUAGE_ENCODINGS[language]:
-                    if enc1 != enc2 and (enc1 not in COMMON_ENCODINGS or enc2 not in COMMON_ENCODINGS):
-                        try:
-                            mojibaked = word.encode(enc1).decode(enc2)
-                            if mojibaked != word:
-                                for trigram in get_trigrams(mojibaked):
-                                    baked_freqs[(trigram, enc2, enc1)] += freq
-                        except UnicodeError:
-                            pass
+                for enc1 in COMMON_ENCODINGS + LANGUAGE_ENCODINGS[language]:
+                    for enc2 in COMMON_ENCODINGS + LANGUAGE_ENCODINGS[language]:
+                        if enc1 != enc2 and (enc1 not in COMMON_ENCODINGS or enc2 not in COMMON_ENCODINGS):
+                            try:
+                                mojibaked = padded.encode(enc1).decode(enc2)
+                                if mojibaked != padded:
+                                    for trigram in get_trigrams(mojibaked):
+                                        baked_freqs[(trigram, enc2, enc1)] += freq
+                            except UnicodeError:
+                                pass
 
 
 def build_trigrams():
@@ -130,7 +139,7 @@ def find_mojibake(normal_freqs, baked_freqs):
             if len(tokenized) == len(trigram):
                 mojibake_items.append((int(freq * 1e6), trigram, encoder, decoder))
     mojibake_items.sort(reverse=True)
-    return mojibake_items[:25000]
+    return mojibake_items[:50000]
 
 
 DETECTING_CODE = """

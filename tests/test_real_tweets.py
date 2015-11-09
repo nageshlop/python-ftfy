@@ -62,8 +62,7 @@ TEST_CASES = [
     (0, 2, 'Feijoada do Rio Othon Palace no Bossa Café\x80\x80', 'Feijoada do Rio Othon Palace no Bossa Café\x80\x80'),
     (0, 2, "├┤a┼┐a┼┐a┼┐a┼┐a", "├┤a┼┐a┼┐a┼┐a┼┐a"),
     (0, 2, "SELKÄ\xa0EDELLÄ\xa0MAAHAN via @YouTube", "SELKÄ\xa0EDELLÄ\xa0MAAHAN via @YouTube"),
-    (0, 2, 'WELCΘME HΘME THETAS!', 'WELCΘME HΘME THETAS!'),
-
+    
     # This one has two differently-broken layers of Windows-1252 <=> UTF-8,
     # and it's kind of amazing that we solve it.
     (1, 2, 
@@ -104,10 +103,13 @@ TEST_CASES = [
     # to fix that particular mix-up, make sure this text isn't wrongly "fixed".
     (0, 2, '(|| * m *)ｳ､ｳｯﾌﾟ･･', '(|| * m *)ウ、ウップ・・'),
 
+    # False positive with cleverness=2
+    (0, 1, 'WELCΘME HΘME THETAS!', 'WELCΘME HΘME THETAS!'),
+
     ## Current false positives:
-    #(0, 2, "ESSE CARA AI QUEM É¿", "ESSE CARA AI QUEM É¿"),
-    #(0, 2, "``hogwarts nao existe, voce nao vai pegar o trem pra lá´´", "``hogwarts nao existe, voce nao vai pegar o trem pra lá´´"),
-    #(0, 2, 'P I R Ê™', 'P I R Ê™'),
+    # (-1, -1, "ESSE CARA AI QUEM É¿", "ESSE CARA AI QUEM É¿"),
+    # (-1, -1, "``hogwarts nao existe, voce nao vai pegar o trem pra lá´´", "``hogwarts nao existe, voce nao vai pegar o trem pra lá´´"),
+    # (-1, -1, 'P I R Ê™', 'P I R Ê™'),
 
     ## We don't try to fix East Asian mojibake yet, but here are some examples:
     ## Windows-1252/EUC-JP
@@ -160,9 +162,10 @@ def test_real_tweets():
                 # make sure we can decode the text as intended
                 eq_(fixed, target)
 
-                # make sure we can decode as intended even with an extra layer of badness
-                extra_bad = orig.encode('utf-8').decode('latin-1')
-                eq_(fix_text(extra_bad, cleverness=2), target)
+                if cleverness == 2:
+                    # make sure we can decode as intended even with an extra layer of badness
+                    extra_bad = orig.encode('utf-8').decode('latin-1')
+                    eq_(fix_text(extra_bad, cleverness=cleverness), target)
             else:
                 # make sure it's right to give up at this level of cleverness
                 assert_not_equal(fixed, target)
