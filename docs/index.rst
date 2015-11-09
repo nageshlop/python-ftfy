@@ -110,60 +110,6 @@ the :func:`ftfy.fix_text` pipeline, such as:
 * :func:`ftfy.fixes.decode_escapes`: do what everyone thinks the built-in
   `unicode_escape` codec does, but this one doesn't *cause* mojibake
 
-Encodings ftfy can handle
--------------------------
-
-`ftfy` can't fix all possible mix-ups. Its goal is to cover the most common
-encoding mix-ups while keeping false positives to a very low rate.
-
-`ftfy` can understand text that was decoded as any of these single-byte
-encodings:
-
-- Latin-1 (ISO-8859-1)
-- Windows-1252 (cp1252 -- used in Microsoft products)
-- Windows-1251 (cp1251 -- the Russian version of cp1252)
-- MacRoman (used on Mac OS 9 and earlier)
-- cp437 (used in MS-DOS and some versions of the Windows command prompt)
-
-when it was actually intended to be decoded as one of these variable-length
-encodings:
-
-- UTF-8
-- CESU-8 (what some people think is UTF-8)
-
-It can also understand text that was intended as Windows-1252 but decoded as
-Latin-1. That's the very common case where things like smart-quotes and
-bullets turn into single weird control characters.
-
-However, ftfy cannot understand other mixups between single-byte encodings,
-because it is extremely difficult to detect which mixup in particular is the
-one that happened.
-
-We also can't handle the non-UTF encodings used for Chinese, Japanese, and
-Korean, such as ``shift-jis`` and ``gb18030``.  See `issue #34
-<https://github.com/LuminosoInsight/python-ftfy/issues/34>`_ for why this is so
-hard.
-
-But remember that the input to `ftfy` is Unicode, so it handles actual
-CJK *text* just fine. It just can't discover that a CJK *encoding* introduced
-mojibake into the text.
-
-The `cleverness` setting
-------------------------
-
-- cleverness=0 considers UTF-8, Latin-1, and (sloppy) Windows-1252 as the
-  only three encodings that can be mixed up. It's the fastest version, and
-  it has essentially zero false positives.
-
-- cleverness=1 was the only option up until ftfy 4.0. It applies a variety
-  of rule-based heuristics to detect mixups between UTF-8 and many
-  frequently-used encodings. It encounters false positives about once per
-  gigabyte of Twitter text, when people are doing strange things with their
-  text.
-
-- cleverness=2 applies probabilistic heuristics in addition to the
-  rule-based ones, and attempts to fix mixups between all the "codepages"
-  (one byte per character) encodings used in the Western world.
 
 Using ftfy
 ----------
@@ -186,7 +132,7 @@ Check that the default fixes are appropriate for your use case. For example:
   marks with nice typography. You could even consider doing quite the opposite
   of `uncurl_quotes`, running `smartypants`_ on the result to make all the
   punctuation nice.
-  
+
 .. _smartypants: http://pythonhosted.org/smartypants/
 
 If the only fix you need is to detect and repair decoding errors (mojibake), then
@@ -207,6 +153,63 @@ you should use :func:`ftfy.fix_encoding` directly.
 
 .. autofunction:: ftfy.explain_unicode
 
+
+Encodings ftfy can handle
+-------------------------
+
+ftfy contains heuristics that understand the following encodings:
+
+**Extremely common encodings**
+
+- UTF-8
+- CESU-8 (what some people think is UTF-8)
+- Latin-1 (ISO-8859-1)
+- Windows-1252 (cp1252 -- used in Microsoft products)
+
+**Common single-byte encodings**
+
+- Windows-1251 (cp1251 -- the Russian version of cp1252)
+- cp437 (used in MS-DOS and some versions of the Windows command prompt)
+- MacRoman (used on Mac OS 9 and earlier)
+
+**Uncommon single-byte encodings that are still in use**
+
+- ISO-8859-2, -5, -6, and -9
+- Windows-1250, -1253, -1254, and -1256
+- IBM codepages 437 and 850
+- KOI8
+
+To account for many different pairs of encodings requires more complex heuristics.
+This is controlled with a parameter called "cleverness".
+
+.. versionchanged:: 4.1
+   "Cleverness" was introduced in version 4.1. The set of heuristics that was in
+   ftfy 4.0 corresponds to `cleverness=1`.
+
+When you increase the cleverness, you can handle mix-ups between more pairs of
+encodings. In exchange, you increase the amount of computation that might be
+required to fix a particular text, and increase the likelihood of a false
+positive.
+
+- With cleverness set to 0, you can fix a mix-up between any pair of the
+  "extremely common encodings".
+
+- With cleverness set to 1, you can additionally fix a mix-up between one of
+  the merely "common" single-byte encodings and UTF-8.
+
+- With cleverness set to 2, any pair of these encodings is fixable with
+  sufficient evidence.
+
+The one kind of encoding we specifically avoid handling is encodings for
+Chinese, Japanese, and Korean, such as Shift-JIS, EUC encodings, GB, or Big5.
+These encodings are very difficult to distinguish, and the mojibake that
+results from mixing them up often looks like plausible text in one of these
+languages!
+
+ftfy is fine with CJK *text*, as long as it's in UTF-8, not an encoding that's
+specific to the language.
+
+
 Non-Unicode strings
 -------------------
 
@@ -222,6 +225,7 @@ Unicode string, ftfy will point you to the `Python Unicode HOWTO`_.
 Reasonable ways that you might exchange data, such as JSON or XML, already have
 perfectly good ways of expressing Unicode strings. Given a Unicode string, ftfy
 can apply fixes that are very likely to work without false positives.
+
 
 A note on encoding detection
 ----------------------------
@@ -333,7 +337,7 @@ that ftfy's behavior is consistent across versions.
 
 Future versions of ftfy
 =======================
-    
+
 ftfy has full support for Python 2.7, even including a backport of Unicode 7
 character classes to Python 2. But given the sweeping changes to Unicode in
 Python, it's getting inconvenient to add new features to ftfy that work the

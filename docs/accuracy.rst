@@ -6,7 +6,7 @@ be made by someone's Twitter client.
 We check what ftfy's :func:`fix_encoding` heuristic does to this data, and we
 aim to have the rate of false positives be indistinguishable from zero.
 
-A pre-release version of ftfy was evaluated on 30,880,000 tweets received from
+A pre-release version of ftfy 4.0 was evaluated on 30,880,000 tweets received from
 Twitter's streaming API in April 2015. There was 1 false positive, and it was
 due to a bug that has now been fixed.
 
@@ -30,9 +30,8 @@ evaluation, and found:
 In all the data we've sampled, including from previous versions of ftfy, there
 are only three false positives that remain that we know of::
 
-    fix_encoding('├┤a┼┐a┼┐a┼┐a┼┐a') == 'ôaſaſaſaſa'
     fix_encoding('ESSE CARA AI QUEM É¿') == 'ESSE CARA AI QUEM ɿ'
     fix_encoding('``hogwarts nao existe, voce nao vai pegar o trem pra lá´´')
       == '``hogwarts nao existe, voce nao vai pegar o trem pra lᴴ'
-
+    fix_encoding('P I R Ê™') = 'P I R ʙ'
 
