@@ -42,8 +42,6 @@ LANGUAGE_ENCODINGS = {
     'es': ['macroman', 'cp437', 'cp850'],
     'fr': ['macroman', 'cp437', 'cp850'],
     'id': ['macroman', 'cp437', 'cp850'],
-    'ja': ['shift-jis', 'euc-jp'],
-    'ko': ['euc-kr'],
     'ms': ['macroman', 'cp437'],
     'nl': ['macroman', 'cp437', 'cp850'],
     'pl': ['iso-8859-2', 'windows-1250'],
@@ -51,18 +49,28 @@ LANGUAGE_ENCODINGS = {
     'ru': ['sloppy-windows-1251', 'koi8-r', 'iso-8859-5', 'cp866'],
     'sv': ['macroman', 'iso-8859-2', 'cp437', 'cp850'],
     'tr': ['macroman', 'cp850', 'iso-8859-9', 'sloppy-windows-1254'],
-    #'zh': ['euc-cn', 'gbk', 'big5']
+    # Our current heuristics can't handle the CJK encoding mess well enough.
+    # 'ko': ['euc-kr'],
+    # 'ja': ['shift-jis', 'euc-jp'],
+    # 'zh': ['euc-cn', 'gbk', 'big5']
 }
 COMMON_ENCODINGS = ['iso-8859-1', 'sloppy-windows-1252', 'utf-8']
 
 
 def get_trigrams(text):
+    """
+    Iterate over all 3-character sequences from the given text.
+    """
     for pos in range(0, len(text) - 2):
         trigram = text[pos:pos+3]
         yield trigram
 
 
 def add_language_trigrams(normal_freqs, baked_freqs, language):
+    """
+    Collect the trigram frequencies of both correct and mojibaked text, using
+    word examples from the given language.
+    """
     for baseword in wordfreq.iter_wordlist(language):
         freq = wordfreq.word_frequency(baseword, language)
         for word in set([baseword, baseword.upper()]):

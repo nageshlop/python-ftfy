@@ -48,9 +48,10 @@ TEST_CASES = [
     ('OK??:(   `¬´    ):', 'OK??:(   `¬´    ):'),
     ("selamat berpuasa sob (Ã\xa0Â¸â€¡'ÃŒâ‚¬Ã¢Å’Â£'ÃŒÂ\x81)Ã\xa0Â¸â€¡",
      "selamat berpuasa sob (ง'̀⌣'́)ง"),
-
-    # Looks like UTF-8/Windows-1252, but it should be left alone
+    ('Feijoada do Rio Othon Palace no Bossa Café\x80\x80', 'Feijoada do Rio Othon Palace no Bossa Café\x80\x80'),
+    ("├┤a┼┐a┼┐a┼┐a┼┐a", "├┤a┼┐a┼┐a┼┐a┼┐a"),
     ("SELKÄ\xa0EDELLÄ\xa0MAAHAN via @YouTube", "SELKÄ\xa0EDELLÄ\xa0MAAHAN via @YouTube"),
+    ('WELCΘME HΘME THETAS!', 'WELCΘME HΘME THETAS!'),
 
     # This one has two differently-broken layers of Windows-1252 <=> UTF-8,
     # and it's kind of amazing that we solve it.
@@ -76,40 +77,39 @@ TEST_CASES = [
     # Examples from martinblech
     ('ÖÉËÁ ÌÅ - ÂÏÓÊÏÐÏÕËÏÓ - ×ÉÙÔÇÓ', 'ΦΙΛΑ ΜΕ - ΒΟΣΚΟΠΟΥΛΟΣ - ΧΙΩΤΗΣ'),
     ('ÑÅÊÐÅÒ - Áåñïå÷íûé Åçäîê - 0:00', 'СЕКРЕТ - Беспечный Ездок - 0:00'),
-    ('¼Ò¸®¿¤ - »ç¶ûÇÏ´Â ÀÚ¿©', '소리엘 - 사랑하는 자여'),
-
-    # Windows-1252/EUC-JP mojibake
-    ('49Ç¯Á°½Ð¾ì¡¢Ê¡¸¶¤µ¤ó¤â´î¤Ó Åìµþ¸ÞÎØ ¡Ê¤ï¤«¤ä¤Þ¿·Êó¡Ë',
-     '49年前出場、福原さんも喜び 東京五輪 (わかやま新報)'),
-
-    # Latin-1/Shift-JIS mojibake
-    ('\x83o\x83{\x82¿\x82á\x82ñ\x83l\x83b\x83g\x83j\x83\x85\x81[\x83X',
-     'バボちゃんネットニュース'),
 
     # ISO-8859-1(?) / cp437 mojibake on top of Romanized Urdu leetspeak.
     # This is such a crazy solution that I won't even mind if it regresses.
     ('""" JUMMA """"    ,M\x97B\x84R\x84K ,   " H\x94"AP"K\x94 D\x97\x84 h\x84i \x8ds M\x97b\x84r\x84k D\x8dn k S\x84dq\x8a A\x84p k\x8d H\x84r p\x84r\x8ash\x84n\x8d A\x97r H\x84r M\x97sib\x84t d\x94\x94r H\x94 J\x84y\x8a    =AAMEEn=',
      '""" JUMMA """"    ,MùBäRäK ,   " Hö"AP"Kö Dùä häi ìs Mùbäräk Dìn k Sädqè Aäp kì Här pärèshänì Aùr Här Mùsibät döör Hö Jäyè    =AAMEEn='),
 
-    # Only fix character width; this looks like Shift-JIS/EUC-JP mojibake
-    # but isn't
+    # We can fix the character width here. This also looks plausibly like
+    # Shift-JIS/EUC-JP mojibake, although it isn't. If we ever become able
+    # to fix that particular mix-up, make sure this text isn't wrongly "fixed".
     ('(|| * m *)ｳ､ｳｯﾌﾟ･･', '(|| * m *)ウ、ウップ・・'),
 
     ## Current false positives:
-    #('Feijoada do Rio Othon Palace no Bossa Café\x80\x80', 'Feijoada do Rio Othon Palace no Bossa Café\x80\x80')
-    #("├┤a┼┐a┼┐a┼┐a┼┐a", "├┤a┼┐a┼┐a┼┐a┼┐a"),
     #("ESSE CARA AI QUEM É¿", "ESSE CARA AI QUEM É¿"),
     #("``hogwarts nao existe, voce nao vai pegar o trem pra lá´´", "``hogwarts nao existe, voce nao vai pegar o trem pra lá´´"),
-    #('P I R Ê™', 'P I R Ê™),
-    #('WELCΘME HΘME THETAS!', 'WELCΘME HΘME THETAS!'),
+    #('P I R Ê™', 'P I R Ê™'),
 
-    ## This kind of tweet can't be fixed without a full-blown encoding detector.
-    #("Deja dos heridos hundimiento de barco tur\x92stico en Acapulco.",
-    # "Deja dos heridos hundimiento de barco turístico en Acapulco."),
+    ## We don't try to fix East Asian mojibake yet, but here are some examples:
+    ## Windows-1252/EUC-JP
+    #('49Ç¯Á°½Ð¾ì¡¢Ê¡¸¶¤µ¤ó¤â´î¤Ó Åìµþ¸ÞÎØ ¡Ê¤ï¤«¤ä¤Þ¿·Êó¡Ë',
+    # '49年前出場、福原さんも喜び 東京五輪 (わかやま新報)'),
 
-    ## The heuristics aren't confident enough to fix this text and its weird encoding.
+    ## Latin-1/Shift-JIS
+    #('\x83o\x83{\x82¿\x82á\x82ñ\x83l\x83b\x83g\x83j\x83\x85\x81[\x83X',
+    # 'バボちゃんネットニュース'),
+
+    ## Windows-1252/EUC-KR
+    #('¼Ò¸®¿¤ - »ç¶ûÇÏ´Â ÀÚ¿©', '소리엘 - 사랑하는 자여'),
+
+    ## The heuristics aren't confident enough to fix these examples:
     #("Blog Traffic Tip 2 вЂ“ Broadcast Email Your Blog",
     # "Blog Traffic Tip 2 – Broadcast Email Your Blog"),
+    #("Deja dos heridos hundimiento de barco tur\x92stico en Acapulco.",
+    # "Deja dos heridos hundimiento de barco turístico en Acapulco."),
 
     ## Can't fix this because we're cautious about false positives involving \xa0.
     #('CÃ\xa0nan nan GÃ\xa0idheal', 'Cànan nan Gàidheal'),
