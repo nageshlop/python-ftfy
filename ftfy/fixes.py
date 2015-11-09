@@ -257,7 +257,6 @@ def fix_one_step_and_explain(text, cleverness=1):
             for seq in heuristic_sequences:
                 possibilities.extend(HEURISTIC_LOOKUP[seq])
             counts = Counter(possibilities)
-            print(counts)
 
             most_common = sorted(counts, key=lambda item: (-counts[item], item))
             encoder, decoder = most_common[0]

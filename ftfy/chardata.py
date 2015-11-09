@@ -80,8 +80,8 @@ def _build_utf8_punct_regex():
 PARTIAL_UTF8_PUNCT_RE = _build_utf8_punct_regex()
 
 
-# Recognize UTF-8 sequences that would be valid if it weren't for a b'\xa0'
-# that some Windows-1252 program converted to a plain space.
+# Recognize UTF-8 sequences that would be valid if it weren't for a byte 0xa0
+# that some Windows-1252 program converted to a plain space (byte 0x20).
 #
 # The smaller values are included on a case-by-case basis, because we don't want
 # to decode likely input sequences to unlikely characters. These are the ones
