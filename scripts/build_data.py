@@ -122,7 +122,7 @@ def make_char_data_file(do_it_anyway=False):
     # I don't understand what people are doing with U+80, but it's something.
     # When it's not meant to be the Euro sign, it's some sort of replacement
     # character.
-    cclasses[ord(char)] = 'o'
+    cclasses[0x80] = 'o'
 
     # Specific characters that are often used in mojibake and very rarely
     # used for their intended purpose.

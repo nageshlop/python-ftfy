@@ -92,17 +92,22 @@ WEIRDNESS_RE = _make_weirdness_regex()
 # of a mojibake sequence. It's plausible that such a character could appear
 # after an accented capital letter, for example, so we'll want to add a
 # slight preference to leave these characters alone.
-ENDING_PUNCT_RE = re.compile(
+#
+# For similar reasons, we'll apply a discount to sequences of line-drawing
+# and block-drawing characters, because they might actually be drawing
+# something, even when they're next to letters.
+DISCOUNT_RE = re.compile(
     '['
     '\N{HORIZONTAL ELLIPSIS}\N{EM DASH}\N{EN DASH}'
     '\N{RIGHT SINGLE QUOTATION MARK}\N{RIGHT DOUBLE QUOTATION MARK}'
     '\N{SINGLE RIGHT-POINTING ANGLE QUOTATION MARK}'
     '\N{RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK}'
     '\N{NO-BREAK SPACE}'
-    ']'
+    ']|'
+    '[\u2500-\u257f][\u2500-\u259f]'  # drawing characters
 )
 ACCENT_SEQUENCE_RE = re.compile('[\xc0-\xff]{4}')
-
+LINE_DRAWING_RE = re.compile('')
 
 def sequence_weirdness(text):
     """
@@ -129,16 +134,28 @@ def sequence_weirdness(text):
         - Non-digit numbers
         - Symbols (including math and currency)
 
-    The return value is the number of instances of weirdness.
+    - Three characters from U+C0 to U+FF in a row (these are mostly accented
+      Latin letters, and were usually meant to be an alphabet from a different
+      encoding)
+
+    There is a discount for certain characters that could occur at the end of
+    a mojibake sequence or at the end of a legitimate word. This discount
+    subtracts from the weirdness when those characters appear, encouraging
+    leaving them alone when in doubt. A similar discount applies to "line
+    drawing" characters when they're used together and might be drawing
+    something.
+
+    The return value is the number of instances of weirdness minus the
+    number of discounted sequences.
     """
     text2 = unicodedata.normalize('NFC', text)
     weirdness = len(WEIRDNESS_RE.findall(chars_to_classes(text2)))
-    punct_discount = len(ENDING_PUNCT_RE.findall(text2))
+    discount = len(DISCOUNT_RE.findall(text2))
     accent_sequences = len([
         seq for seq in ACCENT_SEQUENCE_RE.findall(text2)
         if len(set(seq)) >= 3
     ])
-    return weirdness * 2 - punct_discount + accent_sequences
+    return weirdness * 2 + accent_sequences - discount
 
 
 def text_cost(text):
