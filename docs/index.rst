@@ -148,6 +148,23 @@ But remember that the input to `ftfy` is Unicode, so it handles actual
 CJK *text* just fine. It just can't discover that a CJK *encoding* introduced
 mojibake into the text.
 
+The `cleverness` setting
+------------------------
+
+- cleverness=0 considers UTF-8, Latin-1, and (sloppy) Windows-1252 as the
+  only three encodings that can be mixed up. It's the fastest version, and
+  it has essentially zero false positives.
+
+- cleverness=1 was the only option up until ftfy 4.0. It applies a variety
+  of rule-based heuristics to detect mixups between UTF-8 and many
+  frequently-used encodings. It encounters false positives about once per
+  gigabyte of Twitter text, when people are doing strange things with their
+  text.
+
+- cleverness=2 applies probabilistic heuristics in addition to the
+  rule-based ones, and attempts to fix mixups between all the "codepages"
+  (one byte per character) encodings used in the Western world.
+
 Using ftfy
 ----------
 

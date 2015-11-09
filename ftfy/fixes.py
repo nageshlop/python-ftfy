@@ -55,8 +55,11 @@ def fix_encoding(text, cleverness=1):
     The input to the function must be Unicode. If you don't have Unicode text,
     you're not using the right tool to solve your problem.
 
-    `fix_encoding` decodes text that looks like it was decoded incorrectly. It
-    leaves alone text that doesn't.
+    You can tune how aggressive and complex its heuristic is by changing the
+    `cleverness` parameter, which ranges from 0 to 2 and defaults to 1. See the
+    "Tuning cleverness" section of the documentation for more.
+
+    Simple examples:
 
         >>> print(fix_encoding('Ãºnico'))
         único
@@ -101,14 +104,21 @@ def fix_encoding(text, cleverness=1):
         >>> print(fix_encoding('AHÅ™, the new sofa from IKEA®'))
         AHÅ™, the new sofa from IKEA®
 
-    Finally, we handle the case where the text is in a single-byte encoding
-    that was intended as Windows-1252 all along but read as Latin-1:
+    We handle the case where the text is in a single-byte encoding that was
+    intended as Windows-1252 but read as Latin-1:
 
         >>> print(fix_encoding('This text was never UTF-8 at all\x85'))
         This text was never UTF-8 at all…
 
-    The best version of the text is found using
-    :func:`ftfy.badness.text_cost`.
+    If the mix-up is between any other pair of non-UTF-8 encodings, it will
+    require turning up the 'cleverness' to fix it.
+
+        >>> print(fix_encoding('nunca te aburrir‡s'))
+        nunca te aburrir‡s
+        >>> print(fix_encoding('nunca te aburrir‡s', cleverness=2))
+        nunca te aburrirás
+
+    The best version of the text is found using :func:`ftfy.badness.text_cost`.
     """
     text, _ = fix_encoding_and_explain(text, cleverness)
     return text
@@ -228,7 +238,7 @@ def fix_one_step_and_explain(text, cleverness=1):
                 decoding = 'utf-8'
                 # Check encoded_bytes for sequences that would be UTF-8,
                 # except they have b' ' where b'\xa0' would belong.
-                if ALTERED_UTF8_RE.search(encoded_bytes):
+                if cleverness >= 1 and ALTERED_UTF8_RE.search(encoded_bytes):
                     encoded_bytes = restore_byte_a0(encoded_bytes)
                     cost = encoded_bytes.count(b'\xa0') * 2
                     transcode_steps.append(('transcode', 'restore_byte_a0', cost))
