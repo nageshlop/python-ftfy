@@ -1,3 +1,4 @@
+# coding: utf-8
 """
 This file defines a general method for evaluating ftfy using data that arrives
 in a stream. A concrete implementation of it is found in `twitter_tester.py`.

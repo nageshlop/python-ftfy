@@ -1,3 +1,4 @@
+# coding: utf-8
 from __future__ import unicode_literals
 from ftfy import fix_text, fix_text_segment
 from ftfy.fixes import unescape_html
