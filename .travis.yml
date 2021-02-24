@@ -7,7 +7,6 @@ arch:
   - ppc64le
 
 python:
-  - 2.7
   - 3.8
 
 script:
